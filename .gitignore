@@ -1,0 +1,28 @@
+# Client directories and files
+client/dist/
+client/node_modules/
+client/npm-debug.log*
+client/yarn-debug.log*
+client/yarn-error.log*
+client/yarn.lock
+client/.DS_Store
+
+# Server directories and files
+server/venv/bin/
+server/venv/include/
+server/venv/lib/
+server/venv/lib64/
+server/venv/lib64/*
+server/venv/__pycache__/
+server/venv/share/
+server/venv/config.py
+server/venv/pyvenv.cfg
+server/venv/.idea
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
