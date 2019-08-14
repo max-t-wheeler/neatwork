@@ -50,17 +50,10 @@ class DiscoGraph:
                 for label in labels:
                     self.append_node(root, label, self.target_type, offset=100 * np.random.random(1)[0])
         else:
-            count = 0
             for release in releases:
-                count += 1
-                print(count)
-                print(release['resource_url'])
-                # print(release['id'])
-                # return 0
-                # self.append_node(root, release, self.target_type)
+                self.append_node(root, release, self.target_type)
 
     def filter_releases(self, releases, limited_releases):
-        count = 0
         if self.source_type == 'artist':
             if self.target_type == 'master':
                 for release in releases['releases']:
@@ -72,22 +65,10 @@ class DiscoGraph:
             else:
                 for release in releases['releases']:
                     if release['role'] == 'Main' and release['type'] == 'master':
-                        print('release')
-                        print(release.keys())
                         main_release = self.client.get_resource(release['main_release'], self.target_type)
-                        print('main release')
-                        print(main_release.keys())
-                        print(main_release['resource_url'])
-                        # return 0
                         limited_releases.append(main_release)
-                        count += 1
-                        print(count)
                     if release['role'] == 'Main' and release['type'] == 'release' and (release['format'].find('Album') != -1 or release['format'].find('Single') != -1):
-                        print(release['title'])
-                        print(release['id'])
                         limited_releases.append(release)
-                        count += 1
-                        print(count)
         else:
             for release in releases['releases']:
                 try:
@@ -107,12 +88,10 @@ class DiscoGraph:
         count = 1
 
         while count < num_pages:
-            # releases = self.client.get_releases(releases['pagination']['urls']['next'])
-            # print(releases)
-            # self.filter_releases(releases, releases_)
+            releases = self.client.get_releases(releases['pagination']['urls']['next'])
+            self.filter_releases(releases, releases_)
             count += 1
 
-        # return 0
         self.crawl_releases(root, releases_)
 
     def crawl_like_associations(self, root, depth):
@@ -125,7 +104,6 @@ class DiscoGraph:
         while count < depth:
 
             neighbors = self.explore_neighbors(nodes)
-            print(neighbors)
             nodes = []
 
             for neighbor in neighbors:

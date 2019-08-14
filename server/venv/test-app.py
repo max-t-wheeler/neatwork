@@ -2,7 +2,7 @@ from flask import Flask, g, jsonify, request
 from flask_cors import CORS
 import time
 
-from config import USER_AGENT, API_TOKEN
+from config import USER_AGENT, API_TOKEN, API_KEY, API_SECRET
 from discogs_client import Client
 from discogs_client2 import DiscogsClient
 from discograph2 import DiscoGraph
@@ -15,7 +15,7 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 
 app.config['CLIENT'] = Client(USER_AGENT, user_token=API_TOKEN)
-app.config['CLIENT2'] = DiscogsClient(API_TOKEN)
+app.config['CLIENT2'] = DiscogsClient(USER_AGENT, API_KEY, API_SECRET)
 
 # enable CORS
 CORS(app, resource={r'/*': {'origins': '*'}})
@@ -123,6 +123,4 @@ def get_search_results():
 
 if __name__ == '__main__':
     app.run()
-    # graph = DiscoGraph(client, 'grateful dead', 'association', 'artist', 'artist', 'node_link')
-    # print(client.search('grateful dead', type='artist')['results'][0])
 
