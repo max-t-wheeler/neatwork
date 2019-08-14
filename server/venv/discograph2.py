@@ -67,7 +67,9 @@ class DiscoGraph:
                     if release['role'] == 'Main' and release['type'] == 'master':
                         main_release = self.client.get_resource(release['main_release'], self.target_type)
                         limited_releases.append(main_release)
-                    if release['role'] == 'Main' and release['type'] == 'release' and (release['format'].find('Album') != -1 or release['format'].find('Single') != -1):
+                    if release['role'] == 'Main' \
+                        and release['type'] == 'release' \
+                            and (release['format'].find('Album') != -1 or release['format'].find('Single') != -1):
                         limited_releases.append(release)
         else:
             for release in releases['releases']:
@@ -78,7 +80,7 @@ class DiscoGraph:
                     print('Encountered error while filtering releases')
 
     def crawl_dislike_associations(self, root):
-        releases = self.client.get_releases(root['releases_url'] + '?per_page=500')
+        releases = self.client.get_releases(f'{root["releases_url"]}?per_page=500')
         num_pages = releases['pagination']['pages']
 
         releases_ = []

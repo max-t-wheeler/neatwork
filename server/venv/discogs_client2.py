@@ -9,7 +9,12 @@ BASE_URL = 'https://api.discogs.com'
 class DiscogsClient:
     def __init__(self, user_agent, key, secret):
         self.session = requests.Session()
-        self.session.headers.update({'User-Agent': f'{user_agent}', 'Authorization': f'Discogs key={key}, secret={secret}'})
+        self.session.headers.update(
+            {
+                'User-Agent': f'{user_agent}',
+                'Authorization': f'Discogs key={key}, secret={secret}'
+             }
+        )
         self.data = Cache()
 
     def get_resource(self, resource_id, resource_type):
@@ -20,7 +25,7 @@ class DiscogsClient:
 
         time.sleep(1)
         resp = requests.get(
-            self._url(f'{resource_type + "s/" + str(resource_id)}'),
+            self._url(f'{resource_type}s/{str(resource_id)}'),
             headers=self.session.headers
         )
         resource = resp.json()
@@ -40,7 +45,7 @@ class DiscogsClient:
         return resource
 
     def get_releases(self, resource):
-        time.sleep(1.1)
+        time.sleep(1)
         resp = requests.get(resource, headers=self.session.headers)
         releases = resp.json()
 
@@ -49,7 +54,7 @@ class DiscogsClient:
     def search(self, query, **kwargs):
         query_type = kwargs['type']
         resp = requests.get(
-            self._url('database/search?q=' + query + '&type=' + query_type + '&per_page=100'),
+            self._url(f'database/search?q={query}&type={query_type}&per_page=100'),
             headers=self.session.headers
         )
         search_results = resp.json()
