@@ -72,40 +72,41 @@ export default {
         id: node.id,
         type: node.type,
       };
-      this.$emit('getNodeData', nodeData);
-      this.$nextTick(() => {
-        this.selections.popover = this.selections.nodes.append('g').attr('class', 'popover');
-        this.selections.popover.append('rect')
-            .attr('class', 'popover')
-            .attr('fill', 'white')
-            .attr('stroke', 'rgb(0, 0, 0)')
-            .attr('height', 150)
-            .attr('width', 150)
-            .attr('x', node.x)
-            .attr('y', node.y);
-        console.log('test');
-        console.log(this.nodeDetails);
-        this.selections.popover.append('text')
-            .text(node.name)
-            .attr('class', 'popover')
-            .attr('x', node.x)
-            .attr('y', node.y + 20);
-        this.selections.popover.append('text')
-            .text(this.nodeDetails.uri)
-            .attr('class', 'popover')
-            .attr('x', node.x)
-            .attr('y', node.y + 40);
-        console.log(this.nodeDetails.urls);
-        if (this.nodeDetails.urls) {
-          for (let i = 0; i < this.nodeDetails.urls.length; i += 1) {
-              this.selections.popover.append('text')
-                  .text(this.nodeDetails.urls[i])
-                  .attr('class', 'popover')
-                  .attr('x', node.x)
-                  .attr('y', node.y + 40 * (i + 1));
-          }
-        }
-      });
+      console.log(nodeData);
+      // this.$emit('getNodeData', nodeData);
+      // this.$nextTick(() => {
+      //   this.selections.popover = this.selections.nodes.append('g').attr('class', 'popover');
+      //   this.selections.popover.append('rect')
+      //       .attr('class', 'popover')
+      //       .attr('fill', 'white')
+      //       .attr('stroke', 'rgb(0, 0, 0)')
+      //       .attr('height', 150)
+      //       .attr('width', 150)
+      //       .attr('x', node.x)
+      //       .attr('y', node.y);
+      //   console.log('test');
+      //   console.log(this.nodeDetails);
+      //   this.selections.popover.append('text')
+      //       .text(node.name)
+      //       .attr('class', 'popover')
+      //       .attr('x', node.x)
+      //       .attr('y', node.y + 20);
+      //   this.selections.popover.append('text')
+      //       .text(this.nodeDetails.uri)
+      //       .attr('class', 'popover')
+      //       .attr('x', node.x)
+      //       .attr('y', node.y + 40);
+      //   console.log(this.nodeDetails.urls);
+      //   if (this.nodeDetails.urls) {
+      //     for (let i = 0; i < this.nodeDetails.urls.length; i += 1) {
+      //         this.selections.popover.append('text')
+      //             .text(this.nodeDetails.urls[i])
+      //             .attr('class', 'popover')
+      //             .attr('x', node.x)
+      //             .attr('y', node.y + 40 * (i + 1));
+      //     }
+      //   }
+      // });
     },
     tick() {
       let linkTransform;
@@ -159,7 +160,7 @@ export default {
             if (d.degree > 49) {
               return 147;
             }
-            if (d.degree === 0) {
+            if (d.degree === 0 || !d.degree) {
               return 3;
             }
             return 3 * d.degree;

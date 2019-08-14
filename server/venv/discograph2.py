@@ -7,7 +7,7 @@ import time
 
 class DiscoGraph:
 
-    def __init__(self, client, root, connection, source_type, target_type, graph_type=None):
+    def __init__(self, client, connection, source_id, source_type, target_type, graph_type=None):
 
         self.client = client
         self.connection = connection
@@ -20,14 +20,13 @@ class DiscoGraph:
             self.graph = nx.Graph()
 
         self.graph_type = graph_type
-        self.query = client.search(root, type=source_type)[0]
-        self.root_data = self.query.data
+        self.source_id = source_id
         self.source_type = source_type
         self.target_type = target_type
 
     def append_node(self, source, target, node_type, neighbors=None, offset=0):
         if neighbors is not None:
-            neighbors.append(target['resource_url'])
+            neighbors.append(target['id'])
 
         name = 'name'
 
@@ -51,10 +50,17 @@ class DiscoGraph:
                 for label in labels:
                     self.append_node(root, label, self.target_type, offset=100 * np.random.random(1)[0])
         else:
+            count = 0
             for release in releases:
-                self.append_node(root, release, self.target_type)
+                count += 1
+                print(count)
+                print(release['resource_url'])
+                # print(release['id'])
+                # return 0
+                # self.append_node(root, release, self.target_type)
 
     def filter_releases(self, releases, limited_releases):
+        count = 0
         if self.source_type == 'artist':
             if self.target_type == 'master':
                 for release in releases['releases']:
@@ -66,11 +72,22 @@ class DiscoGraph:
             else:
                 for release in releases['releases']:
                     if release['role'] == 'Main' and release['type'] == 'master':
-                        time.sleep(1)
-                        main_release = self.client._get('https://api.discogs.com/releases/' + str(release['main_release']))
+                        print('release')
+                        print(release.keys())
+                        main_release = self.client.get_resource(release['main_release'], self.target_type)
+                        print('main release')
+                        print(main_release.keys())
+                        print(main_release['resource_url'])
+                        # return 0
                         limited_releases.append(main_release)
+                        count += 1
+                        print(count)
                     if release['role'] == 'Main' and release['type'] == 'release' and (release['format'].find('Album') != -1 or release['format'].find('Single') != -1):
+                        print(release['title'])
+                        print(release['id'])
                         limited_releases.append(release)
+                        count += 1
+                        print(count)
         else:
             for release in releases['releases']:
                 try:
@@ -80,7 +97,7 @@ class DiscoGraph:
                     print('Encountered error while filtering releases')
 
     def crawl_dislike_associations(self, root):
-        releases = self.client._get(root['releases_url'] + '?per_page=500')
+        releases = self.client.get_releases(root['releases_url'] + '?per_page=500')
         num_pages = releases['pagination']['pages']
 
         releases_ = []
@@ -90,29 +107,30 @@ class DiscoGraph:
         count = 1
 
         while count < num_pages:
-            time.sleep(1)
-            releases = self.client._get(releases['pagination']['urls']['next'])
-            self.filter_releases(releases, releases_)
+            # releases = self.client.get_releases(releases['pagination']['urls']['next'])
+            # print(releases)
+            # self.filter_releases(releases, releases_)
             count += 1
 
-        print(len(releases_))
+        # return 0
         self.crawl_releases(root, releases_)
 
     def crawl_like_associations(self, root, depth):
 
         count = 0
-        root_url = root['resource_url']
-        links = [root_url]
-        visited = [root_url]
+        root_id = root['id']
+        nodes = [root_id]
+        visited = [root_id]
 
         while count < depth:
 
-            neighbors = self.explore_neighbors(links)
-            links = []
+            neighbors = self.explore_neighbors(nodes)
+            print(neighbors)
+            nodes = []
 
             for neighbor in neighbors:
                 if neighbor not in visited:
-                    links.append(neighbor)
+                    nodes.append(neighbor)
                     visited.append(neighbor)
 
             count += 1
@@ -128,28 +146,26 @@ class DiscoGraph:
 
         if self.source_type == 'artist':
             for node in nodes:
-                time.sleep(1)
                 try:
-                    v = self.client._get(node)
+                    v = self.client.get_resource(node, self.source_type)
                     if 'members' in v.keys():
                         for member in v['members']:
                             self.append_node(v, member, 'member', neighbors)
                     elif 'groups' in v.keys():
                         for group in v['groups']:
                             self.append_node(v, group, 'group', neighbors)
-                except discogs_client.exceptions.HTTPError:
+                except:
                     print('HTTP Error')
         else:
             for node in nodes:
-                time.sleep(1)
                 try:
-                    v = self.client._get(node)
+                    v = self.client.get_resource(node, self.source_type)
                     if 'sublabels' in v.keys():
                         for label in v['sublabels']:
                             self.append_node(v, label, 'label', neighbors)
                     if 'parent_label' in v.keys() and v['parent_label']['id'] not in self.graph:
                         self.append_node(v, v['parent_label'], 'label', neighbors)
-                except discogs_client.exceptions.HTTPError:
+                except:
                     print('HTTP Error')
 
         return neighbors
@@ -160,27 +176,17 @@ class DiscoGraph:
     # but prevented while crawling
     def generate(self, depth):
 
-        root = self.root_data['resource_url']
-        u = self.client._get(root)
+        u = self.client.get_resource(self.source_id, self.source_type)
 
-        if self.source_type == 'artist':
-            if 'members' in u.keys():
-                self.graph.add_node(u['id'], name=u['name'], type='group')
-            else:
-                self.graph.add_node(u['id'], name=u['name'], type='member')
-        elif self.source_type == 'label':
-            self.graph.add_node(u['id'], name=u['name'], type='label')
-        else:
-            print('Invalid query type provided in discograph.constructor')
-            return 0
+        self.graph.add_node(u['id'], name=u['name'], type=u['type'])
 
         if self.connection == 'association':
             if self.source_type == self.target_type:
                 self.crawl_like_associations(u, depth)
-            else:
-                self.crawl_dislike_associations(u)
-        elif self.connection == 'collaboration':
-            pass
+        #     else:
+        #         self.crawl_dislike_associations(u)
+        # elif self.connection == 'collaboration':
+        #     pass
         else:
             self.crawl_dislike_associations(u)
 
