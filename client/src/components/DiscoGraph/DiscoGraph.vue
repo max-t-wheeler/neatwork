@@ -108,25 +108,6 @@ export default {
           console.log(error);
         });
     },
-    generateGraph(payload) {
-      const path = 'http://localhost:5000/generate_graph';
-
-      console.log('Generating graph data...');
-
-      axios.post(path, payload)
-        .then((res) => {
-          this.graphData = res.data.graph_data;
-          this.display.loading = false;
-          this.display.graph = true;
-          console.log('Graph generated');
-        })
-        .catch((error) => {
-          this.display.loading = false;
-          this.failureMessage = 'Failed to generate graph data';
-          this.display.failureMessage = true;
-          console.log(error);
-        });
-    },
     getGraphData(payload) {
       const path = 'http://localhost:5000/get_graph_data';
 
@@ -205,13 +186,6 @@ export default {
       };
 
       console.log(payload);
-
-      // this.generateGraph(payload);
-
-      // const payload = {
-      //   source_id: this.parameters.sourceId,
-      //   source_type: this.parameters.sourceType,
-      // };
 
       this.getGraphData(payload);
     },
