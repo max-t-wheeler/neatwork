@@ -2,7 +2,7 @@ from flask import Flask, g, jsonify, request
 from flask_cors import CORS
 import time
 
-from config import USER_AGENT, API_TOKEN, API_KEY, API_SECRET
+from config import USER_AGENT, API_KEY, API_SECRET
 from discogs_client import DiscogsClient
 from discograph import DiscoGraph
 
