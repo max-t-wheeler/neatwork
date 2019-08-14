@@ -39,14 +39,12 @@ class DiscoGraph:
     def crawl_releases(self, root, releases):
         if self.target_type == 'artist':
             for release in releases:
-                time.sleep(1)
-                artists = self.client._get(release['resource_url'])['artists']
+                artists = self.client.get_resource(release['id'], 'release')['artists']
                 for artist in artists:
                     self.append_node(root, artist, self.target_type, offset=100*np.random.random(1)[0])
         elif self.target_type == 'label':
             for release in releases:
-                time.sleep(1)
-                labels = self.client._get(release['resource_url'])['labels']
+                labels = self.client.get_resource(release['id'], 'release')['labels']
                 for label in labels:
                     self.append_node(root, label, self.target_type, offset=100 * np.random.random(1)[0])
         else:
@@ -65,7 +63,7 @@ class DiscoGraph:
             else:
                 for release in releases['releases']:
                     if release['role'] == 'Main' and release['type'] == 'master':
-                        main_release = self.client.get_resource(release['main_release'], self.target_type)
+                        main_release = self.client.get_resource(release['main_release'], 'release')
                         limited_releases.append(main_release)
                     if release['role'] == 'Main' \
                         and release['type'] == 'release' \
@@ -163,8 +161,8 @@ class DiscoGraph:
         if self.connection == 'association':
             if self.source_type == self.target_type:
                 self.crawl_like_associations(u, depth)
-        #     else:
-        #         self.crawl_dislike_associations(u)
+            else:
+                self.crawl_dislike_associations(u)
         # elif self.connection == 'collaboration':
         #     pass
         else:
