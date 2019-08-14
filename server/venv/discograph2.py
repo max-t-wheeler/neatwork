@@ -49,7 +49,7 @@ class DiscoGraph:
                     self.append_node(root, label, self.target_type, offset=100 * np.random.random(1)[0])
         else:
             for release in releases:
-                if self.target_type == 'master':
+                if self.target_type == 'master' and self.source_type != 'label':
                     release = self.client.get_resource(release, 'master')
                 else:
                     release = self.client.get_resource(release, 'release')
