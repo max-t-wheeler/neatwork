@@ -39,16 +39,20 @@ class DiscoGraph:
     def crawl_releases(self, root, releases):
         if self.target_type == 'artist':
             for release in releases:
-                artists = self.client.get_resource(release['id'], 'release')['artists']
+                artists = self.client.get_resource(release, 'release')['artists']
                 for artist in artists:
                     self.append_node(root, artist, self.target_type, offset=100*np.random.random(1)[0])
         elif self.target_type == 'label':
             for release in releases:
-                labels = self.client.get_resource(release['id'], 'release')['labels']
+                labels = self.client.get_resource(release, 'release')['labels']
                 for label in labels:
                     self.append_node(root, label, self.target_type, offset=100 * np.random.random(1)[0])
         else:
             for release in releases:
+                if self.target_type == 'master':
+                    release = self.client.get_resource(release, 'master')
+                else:
+                    release = self.client.get_resource(release, 'release')
                 self.append_node(root, release, self.target_type)
 
     def filter_releases(self, releases, limited_releases):
@@ -57,23 +61,23 @@ class DiscoGraph:
                 for release in releases['releases']:
                     try:
                         if release['role'] == 'Main' and release['type'] == 'master':
-                            limited_releases.append(release)
+                            limited_releases.append(release['id'])
                     except:
                         print('Encountered error while filtering releases')
             else:
                 for release in releases['releases']:
                     if release['role'] == 'Main' and release['type'] == 'master':
-                        main_release = self.client.get_resource(release['main_release'], 'release')
+                        main_release = release['main_release']
                         limited_releases.append(main_release)
                     if release['role'] == 'Main' \
                         and release['type'] == 'release' \
                             and (release['format'].find('Album') != -1 or release['format'].find('Single') != -1):
-                        limited_releases.append(release)
+                        limited_releases.append(release['id'])
         else:
             for release in releases['releases']:
                 try:
                     if release['format'].find('Album') != -1 or release['format'].find('Single') != -1:
-                        limited_releases.append(release)
+                        limited_releases.append(release['id'])
                 except:
                     print('Encountered error while filtering releases')
 
