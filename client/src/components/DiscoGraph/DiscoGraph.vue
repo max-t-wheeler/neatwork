@@ -5,7 +5,8 @@
       <navpane
         v-if='display.inputs'
         id='discograph-options'
-        v-bind='{parameters, onSubmit, onReload, toFullScreen}'
+        v-bind='{onReload, onSearch, onSubmit, parameters, queryData, toFullScreen}'
+        @onSubmit='onSubmit()'
       />
       <b-row v-if='display.inputs'>
         <b-col id='discograph-context'>
@@ -58,14 +59,16 @@ export default {
       failureMessage: '',
       graphData: null,
       nodeData: null,
+      queryData: null,
       parameters: {
         connection: 'association',
         name: 'Grateful Dead',
         numSteps: 1,
+        resourceUrl: null,
+        sourceId: null,
         sourceType: 'artist',
         targetType: 'artist',
       },
-      token: '',
     };
   },
   methods: {
@@ -84,6 +87,23 @@ export default {
         .catch((error) => {
           this.display.loading_node_data = false;
           this.failureMessage = 'Failed to acquire node data';
+          this.display.failureMessage = true;
+          console.log(error);
+        });
+    },
+    getSearchResults(payload) {
+      const path = 'http://localhost:5000/get_search_results';
+
+      console.log('Retrieving search results...');
+
+      axios.post(path, payload)
+        .then((res) => {
+          this.queryData = res.data.query_data;
+          console.log('Search results retrieved');
+        })
+        .catch((error) => {
+          this.display.loading = false;
+          this.failureMessage = 'Failed to retrieve search results';
           this.display.failureMessage = true;
           console.log(error);
         });
@@ -107,6 +127,42 @@ export default {
           console.log(error);
         });
     },
+    getGraphData(payload) {
+      const path = 'http://localhost:5000/get_graph_data';
+
+      console.log('Requesting graph data...');
+
+      axios.post(path, payload)
+        .then((res) => {
+          this.graphData = res.data.graph_data;
+          this.display.loading = false;
+          this.display.graph = true;
+          // console.log(this.graphData);
+          // console.log(this.graphData.nodes);
+          console.log('Graph generated');
+          // if (!this.graphData) {
+          //   this.graphData = res.data.graph_data;
+          //   this.display.loading = false;
+          //   this.display.graph = true;
+          //   console.log(this.graphData);
+          //   console.log(this.graphData.nodes);
+          //   console.log('Graph generated');
+          // } else {
+          //   res.data.graph_data.nodes.forEach((node) => {
+          //     this.graphData.nodes.push(node);
+          //   });
+          //   res.data.graph_data.links.forEach((link) => {
+          //     this.graphData.links.push(link);
+          //   });
+          // }
+        })
+        .catch((error) => {
+          this.display.loading = false;
+          this.failureMessage = 'Failed to generate graph data';
+          this.display.failureMessage = true;
+          console.log(error);
+        });
+    },
     onReload(event) {
       event.preventDefault();
 
@@ -118,8 +174,21 @@ export default {
         console.log('In development');
       }
     },
-    onSubmit(event) {
+    onSearch(event) {
       event.preventDefault();
+
+      if (this.display.failureMessage) this.display.failureMessage = false;
+
+      const payload = {
+        count: 10,
+        source_type: this.parameters.sourceType,
+        text: this.parameters.name,
+      };
+
+      this.getSearchResults(payload);
+    },
+    onSubmit() {
+      // event.preventDefault();
 
       if (this.display.graph) this.display.graph = false;
       if (this.display.failureMessage) this.display.failureMessage = false;
@@ -129,11 +198,22 @@ export default {
         connection: this.parameters.connection,
         name: this.parameters.name,
         num_steps: this.parameters.numSteps,
+        resource_url: this.parameters.resourceUrl,
+        source_id: this.parameters.sourceId,
         source_type: this.parameters.sourceType,
         target_type: this.parameters.targetType,
       };
 
-      this.generateGraph(payload);
+      console.log(payload);
+
+      // this.generateGraph(payload);
+
+      // const payload = {
+      //   source_id: this.parameters.sourceId,
+      //   source_type: this.parameters.sourceType,
+      // };
+
+      this.getGraphData(payload);
     },
     toFullScreen() {
       const display = document.getElementById('discograph-display');

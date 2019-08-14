@@ -42,10 +42,13 @@
         <input
           v-model='parameters.name'
           class='discograph-navpane'
-          placeholder='Enter an artist...'
+          placeholder='Search'
         >
       </b-col>
       <b-col>
+        <b-button v-b-modal.search-modal @click='onSearch'>
+          <font-awesome-icon icon='search'></font-awesome-icon>
+        </b-button>
         <b-button @click='onSubmit'>
           <font-awesome-icon icon='play-circle'></font-awesome-icon>
         </b-button>
@@ -57,21 +60,48 @@
         </b-button>
       </b-col>
     </b-row>
+    <b-modal
+      id='search-modal'
+      ref='search-modal'
+      title='Search Results'
+      hide-footer
+    >
+      <b-row v-for='query in queryData' :key='query.index'>
+        <!-- <svg
+        width='200'
+        height='200'
+        xmlns='http://www.w3.org/2000/svg'
+        xmlns:xlink='http://www.w3.org/1999/xlink'>
+          <image xlink:href='query.thumb' height='200' width='200'/>
+        </svg> -->
+        <b-button
+          class='search-button'
+          @click='submitSearch(query)'
+        >{{ query.title }}
+        </b-button>
+      </b-row>
+    </b-modal>
   </div>
 </template>
 
 <script>
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faArrowsAlt, faPlayCircle, faSync } from '@fortawesome/free-solid-svg-icons';
+import {
+  faArrowsAlt,
+  faPlayCircle,
+  faSearch,
+  faSync,
+} from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
 library.add(faArrowsAlt);
 library.add(faPlayCircle);
+library.add(faSearch);
 library.add(faSync);
 
 export default {
   name: 'Navpane',
-  props: ['parameters', 'onSubmit', 'onReload', 'toFullScreen'],
+  props: ['onSearch', 'onSubmit', 'onReload', 'parameters', 'queryData', 'toFullScreen'],
   components: {
     'font-awesome-icon': FontAwesomeIcon,
   },
@@ -147,6 +177,14 @@ export default {
     },
   },
   methods: {
+    submitSearch(query) {
+      this.parameters.sourceId = query.id;
+      this.parameters.name = query.title;
+      this.parameters.sourceType = query.type;
+      this.parameters.resourceUrl = query.resource_url;
+      this.$refs['search-modal'].hide();
+      this.$emit('onSubmit');
+    },
     resetDepth() {
       if (this.parameters.numSteps > this.depth.max) {
         this.parameters.numSteps = this.depth.max;
@@ -168,6 +206,13 @@ export default {
 }
 
 .discograph-navpane {
+  width: 100%;
+}
+
+.search-button {
+  color: black;
+  background-color: white;
+  border-color: white;
   width: 100%;
 }
 
