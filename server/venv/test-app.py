@@ -3,8 +3,8 @@ from flask_cors import CORS
 import time
 
 from config import USER_AGENT, API_TOKEN, API_KEY, API_SECRET
-from discogs_client2 import DiscogsClient
-from discograph2 import DiscoGraph
+from discogs_client import DiscogsClient
+from discograph import DiscoGraph
 
 # configuration
 DEBUG = True
