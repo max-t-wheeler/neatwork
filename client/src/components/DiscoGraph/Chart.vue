@@ -67,47 +67,6 @@ export default {
     dragEnd(d) {
       if (!d3.event.active) this.simulation.alphaTarget(0);
     },
-    showPopover(node) {
-      const nodeData = {
-        id: node.id,
-        type: node.type,
-      };
-      console.log(nodeData);
-      // this.$emit('getNodeData', nodeData);
-      // this.$nextTick(() => {
-      //   this.selections.popover = this.selections.nodes.append('g').attr('class', 'popover');
-      //   this.selections.popover.append('rect')
-      //       .attr('class', 'popover')
-      //       .attr('fill', 'white')
-      //       .attr('stroke', 'rgb(0, 0, 0)')
-      //       .attr('height', 150)
-      //       .attr('width', 150)
-      //       .attr('x', node.x)
-      //       .attr('y', node.y);
-      //   console.log('test');
-      //   console.log(this.nodeDetails);
-      //   this.selections.popover.append('text')
-      //       .text(node.name)
-      //       .attr('class', 'popover')
-      //       .attr('x', node.x)
-      //       .attr('y', node.y + 20);
-      //   this.selections.popover.append('text')
-      //       .text(this.nodeDetails.uri)
-      //       .attr('class', 'popover')
-      //       .attr('x', node.x)
-      //       .attr('y', node.y + 40);
-      //   console.log(this.nodeDetails.urls);
-      //   if (this.nodeDetails.urls) {
-      //     for (let i = 0; i < this.nodeDetails.urls.length; i += 1) {
-      //         this.selections.popover.append('text')
-      //             .text(this.nodeDetails.urls[i])
-      //             .attr('class', 'popover')
-      //             .attr('x', node.x)
-      //             .attr('y', node.y + 40 * (i + 1));
-      //     }
-      //   }
-      // });
-    },
     tick() {
       let linkTransform;
       if (this.graph.multigraph) {
@@ -154,7 +113,7 @@ export default {
         .append('circle')
           .attr('id', d => d.type + '_' + d.id)
           .attr('r', (d) => {
-            if (this.parameters.sourceType !== this.parameters.targetType) {
+            if (this.parameters.connection === 'collaboration' || (this.parameters.sourceType !== this.parameters.targetType)) {
               return 3;
             }
             if (d.degree > 49) {

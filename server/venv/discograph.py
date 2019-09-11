@@ -1,3 +1,4 @@
+import collections
 import json
 import networkx as nx
 import numpy as np
@@ -13,7 +14,8 @@ class DiscoGraph:
 
         if graph_type == 'tree':
             self.graph = nx.DiGraph()
-        elif connection == 'association' and source_type != target_type:
+        elif connection == 'collaboration' \
+                or (connection == 'association' and source_type != target_type):
             self.graph = nx.MultiGraph()
         else:
             self.graph = nx.Graph()
@@ -36,7 +38,12 @@ class DiscoGraph:
         self.graph.add_node(target['id'], name=target[name], type=node_type)
 
     def crawl_releases(self, root, releases):
-        if self.target_type == 'artist':
+        if self.connection == 'collaboration':
+            for release in releases:
+                artists = self.client.get_resource(release, 'release')['extraartists']
+                for artist in artists:
+                    self.append_node(root, artist, self.target_type, offset=100 * np.random.random(1)[0])
+        elif self.target_type == 'artist':
             for release in releases:
                 artists = self.client.get_resource(release, 'release')['artists']
                 for artist in artists:
@@ -54,53 +61,59 @@ class DiscoGraph:
                     release = self.client.get_resource(release, 'release')
                 self.append_node(root, release, self.target_type)
 
-    def filter_releases(self, releases, limited_releases):
+    def filter_releases(self, releases):
+
+        filtered_releases = []
+
         if self.source_type == 'artist':
             if self.target_type == 'master':
                 for release in releases['releases']:
                     try:
                         if release['role'] == 'Main' and release['type'] == 'master':
-                            limited_releases.append(release['id'])
+                            filtered_releases.append(release['id'])
                     except:
                         print('Encountered error while filtering releases')
             else:
                 for release in releases['releases']:
                     if release['role'] == 'Main' and release['type'] == 'master':
-                        main_release = release['main_release']
-                        limited_releases.append(main_release)
+                        filtered_releases.append(release['main_release'])
                     if release['role'] == 'Main' \
                         and release['type'] == 'release' \
                             and (release['format'].find('Album') != -1 or release['format'].find('Single') != -1):
-                        limited_releases.append(release['id'])
+                        filtered_releases.append(release['id'])
         else:
             for release in releases['releases']:
                 try:
                     if release['format'].find('Album') != -1 or release['format'].find('Single') != -1:
-                        limited_releases.append(release['id'])
+                        filtered_releases.append(release['id'])
                 except:
                     print('Encountered error while filtering releases')
 
+        return filtered_releases
+
     def crawl_dislike_associations(self, root):
+
         releases = self.client.get_releases(f'{root["releases_url"]}?per_page=500')
         num_pages = releases['pagination']['pages']
 
-        releases_ = []
+        filtered_releases = []
 
-        self.filter_releases(releases, releases_)
+        filtered_releases.extend(self.filter_releases(releases))
 
         count = 1
 
         while count < num_pages:
             releases = self.client.get_releases(releases['pagination']['urls']['next'])
-            self.filter_releases(releases, releases_)
+            filtered_releases.extend(self.filter_releases(releases))
             count += 1
 
-        self.crawl_releases(root, releases_)
+        self.crawl_releases(root, filtered_releases)
 
     def crawl_like_associations(self, root, depth):
 
         count = 0
         root_id = root['id']
+
         nodes = [root_id]
         visited = [root_id]
 
@@ -166,8 +179,6 @@ class DiscoGraph:
                 self.crawl_like_associations(u, depth)
             else:
                 self.crawl_dislike_associations(u)
-        # elif self.connection == 'collaboration':
-        #     pass
         else:
             self.crawl_dislike_associations(u)
 

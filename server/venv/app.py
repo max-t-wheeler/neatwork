@@ -19,78 +19,67 @@ app.config['CLIENT'] = DiscogsClient(USER_AGENT, API_KEY, API_SECRET)
 CORS(app, resource={r'/*': {'origins': '*'}})
 
 
-@app.route('/get_graph_data', methods=['GET', 'POST'])
+@app.route('/get_graph_data', methods=['POST'])
 def get_graph_data():
     response_object = {
             'status': 'success'
     }
-    if request.method == 'POST':
-        graph_data = request.get_json()
 
-        connection = graph_data['connection'].lower()
-        num_steps = int(graph_data['num_steps'])
-        source_id = str(graph_data['source_id'])
-        source_type = graph_data['source_type'].lower()
-        target_type = graph_data['target_type'].lower()
+    graph_data = request.get_json()
 
-        # construct graph
-        graph = DiscoGraph(app.config['CLIENT'], connection, source_id, source_type, target_type, 'node_link')
-        graph.generate(num_steps)
+    connection = graph_data['connection'].lower()
+    num_steps = int(graph_data['num_steps'])
+    source_id = str(graph_data['source_id'])
+    source_type = graph_data['source_type'].lower()
+    target_type = graph_data['target_type'].lower()
 
-        # graph = {
-        #     'nodes': [app.config['CLIENT'].get_resource(source_id, source_type)],
-        #     'links': []
-        # }
+    # construct graph
+    graph = DiscoGraph(app.config['CLIENT'], connection, source_id, source_type, target_type, 'node_link')
+    graph.generate(num_steps)
 
-        # response_object['graph_data'] = graph
+    response_object['graph_data'] = graph.export()
+    app.config['GRAPH_DATA'] = response_object['graph_data']
 
-        response_object['graph_data'] = graph.export()
-        app.config['GRAPH_DATA'] = response_object['graph_data']
-    else:
-        response_object['graph_data'] = app.config['GRAPH_DATA']
     return jsonify(response_object)
 
 
-@app.route('/get_node_data', methods=['GET', 'POST'])
+@app.route('/get_node_data', methods=['POST'])
 def get_node_data():
     response_object = {
             'status': 'success'
         }
-    if request.method == 'POST':
-        node_data = request.get_json()
 
-        node_id = node_data['id']
-        node_type = node_data['type']
+    node_data = request.get_json()
 
-        # request node data
-        node = app.config['VERTEX'][node_type](node_id)
+    node_id = node_data['id']
+    node_type = node_data['type']
 
-        response_object['node_data'] = {
-            'uri': node.url,
-            'urls': node.urls
-        }
+    # request node data
+    node = app.config['VERTEX'][node_type](node_id)
 
-    else:
-        response_object['graph_data'] = app.config['GRAPH_DATA']
+    response_object['node_data'] = {
+        'uri': node.url,
+        'urls': node.urls
+    }
+
     return jsonify(response_object)
 
 
-@app.route('/get_search_results', methods=['GET', 'POST'])
+@app.route('/get_search_results', methods=['POST'])
 def get_search_results():
     response_object = {
         'status': 'success'
     }
-    if request.method == 'POST':
-        query_data = request.get_json()
 
-        count = query_data['count']
-        source_type = query_data['source_type']
-        text = query_data['text']
+    query_data = request.get_json()
 
-        search_data = app.config['CLIENT'].search(text, type=source_type)
-        response_object['query_data'] = search_data['results'][0:count]
-    else:
-        response_object['query_data'] = app.config['QUERY_DATA']
+    count = query_data['count']
+    source_type = query_data['source_type']
+    text = query_data['text']
+
+    search_data = app.config['CLIENT'].search(text, type=source_type)
+    response_object['query_data'] = search_data['results'][0:count]
+
     return jsonify(response_object)
 
 
