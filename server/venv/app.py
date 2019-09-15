@@ -34,8 +34,8 @@ def get_graph_data():
     target_type = graph_data['target_type'].lower()
 
     # construct graph
-    graph = DiscoGraph(app.config['CLIENT'], connection, source_id, source_type, target_type, 'node_link')
-    graph.generate(num_steps)
+    graph = DiscoGraph(app.config['CLIENT'], connection, num_steps, source_id, source_type, target_type, 'node_link')
+    graph.generate()
 
     response_object['graph_data'] = graph.export()
     app.config['GRAPH_DATA'] = response_object['graph_data']

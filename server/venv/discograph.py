@@ -5,10 +5,11 @@ import time
 
 class DiscoGraph:
 
-    def __init__(self, client, connection, source_id, source_type, target_type, graph_type=None):
+    def __init__(self, client, connection, depth, source_id, source_type, target_type, graph_type=None):
 
         self.client = client
         self.connection = connection
+        self.depth = depth
 
         if graph_type == 'tree':
             self.graph = nx.DiGraph()
@@ -107,7 +108,7 @@ class DiscoGraph:
 
         self.crawl_releases(root, filtered_releases)
 
-    def crawl_like_associations(self, root, depth):
+    def crawl_like_associations(self, root):
 
         count = 0
         root_id = root['id']
@@ -115,7 +116,7 @@ class DiscoGraph:
         nodes = [root_id]
         visited = [root_id]
 
-        while count < depth:
+        while count < self.depth:
 
             neighbors = self.explore_neighbors(nodes)
             nodes = []
@@ -166,17 +167,14 @@ class DiscoGraph:
     # and discovering neighbors up to a given depth
     # note that cycles are allowed in the output
     # but prevented while crawling
-    def generate(self, depth):
+    def generate(self):
 
         u = self.client.get_resource(self.source_id, self.source_type)
 
         self.graph.add_node(u['id'], name=u['name'], type=u['type'])
 
-        if self.connection == 'association':
-            if self.source_type == self.target_type:
-                self.crawl_like_associations(u, depth)
-            else:
-                self.crawl_dislike_associations(u)
+        if self.connection == 'association' and self.source_type == self.target_type:
+            self.crawl_like_associations(u)
         else:
             self.crawl_dislike_associations(u)
 
