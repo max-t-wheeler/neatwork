@@ -35,7 +35,6 @@ export default {
   mounted() {
     // initialize interactions
     const zoom = d3.zoom().on('zoom', this.zoom);
-    console.log(this.graph);
 
     // initialize selections
     this.selections.svg = d3.select(this.$el.querySelector('svg')).call(zoom);

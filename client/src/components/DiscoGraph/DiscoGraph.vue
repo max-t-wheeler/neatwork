@@ -6,7 +6,7 @@
         v-if='display.inputs'
         id='discograph-options'
         v-bind='{onReload, onSearch, onSubmit, parameters, queryData, toFullScreen}'
-        @onSubmit='onSubmit()'
+        @onSubmit='onSubmit($event)'
       />
       <b-row v-if='display.inputs'>
         <b-col id='discograph-context'>
@@ -14,7 +14,6 @@
             v-if='display.graph'
             id='discograph-display'
             v-bind='{graphData, nodeData, parameters}'
-            @getNodeData='getNodeData($event)'
           />
           <div v-if='display.loading' id="loading-icon">
             <socket/>
@@ -35,6 +34,9 @@
 <script>
 import axios from 'axios';
 import { Socket } from 'vue-loading-spinner';
+
+import Graph from './graph';
+import { getGraphData, getSearchResults } from './requests';
 
 import Chart from './Chart.vue';
 import Navpane from './Navpane.vue';
@@ -64,7 +66,6 @@ export default {
         connection: 'association',
         name: 'Grateful Dead',
         numSteps: 1,
-        resourceUrl: null,
         sourceId: null,
         sourceType: 'artist',
         targetType: 'artist',
@@ -72,61 +73,6 @@ export default {
     };
   },
   methods: {
-    getNodeData(payload) {
-      const path = 'http://localhost:5000/get_node_data';
-
-      console.log('Requesting node data...');
-
-      axios.post(path, payload)
-        .then((res) => {
-          this.nodeData = res.data.node_data;
-          this.display.loading_node_data = false;
-          this.display.node_data = true;
-          console.log(this.nodeData);
-        })
-        .catch((error) => {
-          this.display.loading_node_data = false;
-          this.failureMessage = 'Failed to acquire node data';
-          this.display.failureMessage = true;
-          console.log(error);
-        });
-    },
-    getSearchResults(payload) {
-      const path = 'http://localhost:5000/get_search_results';
-
-      console.log('Retrieving search results...');
-
-      axios.post(path, payload)
-        .then((res) => {
-          this.queryData = res.data.query_data;
-          console.log('Search results retrieved');
-        })
-        .catch((error) => {
-          this.display.loading = false;
-          this.failureMessage = 'Failed to retrieve search results';
-          this.display.failureMessage = true;
-          console.log(error);
-        });
-    },
-    getGraphData(payload) {
-      const path = 'http://localhost:5000/get_graph_data';
-
-      console.log('Requesting graph data...');
-
-      axios.post(path, payload)
-        .then((res) => {
-          this.graphData = res.data.graph_data;
-          this.display.loading = false;
-          this.display.graph = true;
-          console.log('Graph generated');
-        })
-        .catch((error) => {
-          this.display.loading = false;
-          this.failureMessage = 'Failed to generate graph data';
-          this.display.failureMessage = true;
-          console.log(error);
-        });
-    },
     onReload(event) {
       event.preventDefault();
 
@@ -149,7 +95,7 @@ export default {
         text: this.parameters.name,
       };
 
-      this.getSearchResults(payload);
+      getSearchResults(payload, this);
     },
     onSubmit() {
       if (this.display.graph) this.display.graph = false;
@@ -160,15 +106,12 @@ export default {
         connection: this.parameters.connection,
         name: this.parameters.name,
         num_steps: this.parameters.numSteps,
-        resource_url: this.parameters.resourceUrl,
         source_id: this.parameters.sourceId,
         source_type: this.parameters.sourceType,
         target_type: this.parameters.targetType,
       };
 
-      console.log(payload);
-
-      this.getGraphData(payload);
+      getGraphData(payload, this);
     },
     toFullScreen() {
       const display = document.getElementById('discograph-display');

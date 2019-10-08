@@ -6,19 +6,14 @@ client/yarn-debug.log*
 client/yarn-error.log*
 client/yarn.lock
 client/.DS_Store
-client/src/components/DiscoGraph/*.js
+client/src/components/DiscoGraph/graph.js
+client/src/components/DiscoGraph/node.js
+client/src/components/DiscoGraph/d3-utilities.js
 
 # Server directories and files
-server/venv/bin/
-server/venv/include/
-server/venv/lib/
-server/venv/lib64/
-server/venv/lib64/*
-server/venv/__pycache__/
-server/venv/share/
-server/venv/config.py
-server/venv/pyvenv.cfg
-server/venv/.idea
+server/venv/
+server/__pycache__/
+server/config.py
 
 # Editor directories and files
 .idea

@@ -1,6 +1,5 @@
 from flask import Flask, g, jsonify, request
 from flask_cors import CORS
-import time
 
 from config import USER_AGENT, API_KEY, API_SECRET
 from discogs_client import DiscogsClient
@@ -38,29 +37,6 @@ def get_graph_data():
     graph.generate()
 
     response_object['graph_data'] = graph.export()
-    app.config['GRAPH_DATA'] = response_object['graph_data']
-
-    return jsonify(response_object)
-
-
-@app.route('/get_node_data', methods=['POST'])
-def get_node_data():
-    response_object = {
-            'status': 'success'
-        }
-
-    node_data = request.get_json()
-
-    node_id = node_data['id']
-    node_type = node_data['type']
-
-    # request node data
-    node = app.config['VERTEX'][node_type](node_id)
-
-    response_object['node_data'] = {
-        'uri': node.url,
-        'urls': node.urls
-    }
 
     return jsonify(response_object)
 
@@ -79,6 +55,37 @@ def get_search_results():
 
     search_data = app.config['CLIENT'].search(text, type=source_type)
     response_object['query_data'] = search_data['results'][0:count]
+
+    return jsonify(response_object)
+
+
+@app.route('/get_resource_data', methods=['POST'])
+def get_resource_data():
+    response_object = {
+        'status': 'success'
+    }
+
+    resource_data = request.get_json()
+
+    resource_id = resource_data['resource_id']
+    resource_type = resource_data['resource_type']
+
+    response_object['resource_data'] = app.config['CLIENT'].get_resource(resource_id, resource_type)
+
+    return jsonify(response_object)
+
+
+@app.route('/get_release_data', methods=['POST'])
+def get_release_data():
+    response_object = {
+        'status': 'success'
+    }
+
+    resource_data = request.get_json()
+
+    resource_id = resource_data['resource_id']
+
+    response_object['release_data'] = app.config['CLIENT'].get_resource(resource_id)
 
     return jsonify(response_object)
 

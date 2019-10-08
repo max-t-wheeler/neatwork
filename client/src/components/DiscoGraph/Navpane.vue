@@ -174,7 +174,6 @@ export default {
       this.parameters.sourceId = query.id;
       this.parameters.name = query.title;
       this.parameters.sourceType = query.type;
-      this.parameters.resourceUrl = query.resource_url;
       this.$refs['search-modal'].hide();
       this.$emit('onSubmit');
     },
