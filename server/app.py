@@ -38,6 +38,8 @@ def get_graph_data():
 
     response_object['graph_data'] = graph.export()
 
+    print(graph.export())
+
     return jsonify(response_object)
 
 
@@ -85,7 +87,7 @@ def get_release_data():
 
     resource_id = resource_data['resource_id']
 
-    response_object['release_data'] = app.config['CLIENT'].get_resource(resource_id)
+    response_object['release_data'] = app.config['CLIENT'].get_releases(resource_id)
 
     return jsonify(response_object)
 

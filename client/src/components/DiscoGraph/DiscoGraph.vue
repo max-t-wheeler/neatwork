@@ -3,17 +3,16 @@
     <toolbar id='toolbar'/>
     <b-container fluid id='discograph-container'>
       <navpane
-        v-if='display.inputs'
         id='discograph-options'
         v-bind='{onReload, onSearch, onSubmit, parameters, queryData, toFullScreen}'
         @onSubmit='onSubmit($event)'
       />
-      <b-row v-if='display.inputs'>
+      <b-row>
         <b-col id='discograph-context'>
           <chart
             v-if='display.graph'
             id='discograph-display'
-            v-bind='{graphData, nodeData, parameters}'
+            v-bind='{graph, graphLastUpdated}'
           />
           <div v-if='display.loading' id="loading-icon">
             <socket/>
@@ -55,12 +54,11 @@ export default {
       display: {
         failureMessage: false,
         graph: false,
-        inputs: true,
         loading: false,
       },
       failureMessage: '',
-      graphData: null,
-      nodeData: null,
+      graph: null,
+      graphLastUpdated: null,
       queryData: null,
       parameters: {
         connection: 'association',
@@ -73,11 +71,14 @@ export default {
     };
   },
   methods: {
+    onGraphUpdate() {
+      this.graphLastUpdated = Date.now();
+    },
     onReload(event) {
       event.preventDefault();
 
-      if (this.graphData) {
-        console.log(this.graphData);
+      if (this.graph) {
+        console.log(this.graph);
       }
 
       if (this.display.graph) {
@@ -95,23 +96,32 @@ export default {
         text: this.parameters.name,
       };
 
-      getSearchResults(payload, this);
+      getSearchResults(payload)
+      .then((queryData) => {
+          this.queryData = queryData;
+          console.log('Search results retrieved');
+      })
+      .catch((error) => {
+          this.display.loading = false;
+          this.failureMessage = 'Failed to retrieve search results';
+          this.display.failureMessage = true;
+          console.log(error);
+      });
     },
     onSubmit() {
       if (this.display.graph) this.display.graph = false;
-      if (this.display.failureMessage) this.display.failureMessage = false;
-      this.display.loading = true;
 
-      const payload = {
-        connection: this.parameters.connection,
-        name: this.parameters.name,
-        num_steps: this.parameters.numSteps,
-        source_id: this.parameters.sourceId,
-        source_type: this.parameters.sourceType,
-        target_type: this.parameters.targetType,
-      };
+      this.graph = new Graph(
+        this.parameters.connection,
+        this.parameters.numSteps,
+        this.parameters.sourceId,
+        this.parameters.sourceType,
+        this.parameters.targetType,
+        this.onGraphUpdate.bind(this),
+      );
 
-      getGraphData(payload, this);
+      this.graph.generate();
+      this.display.graph = true;
     },
     toFullScreen() {
       const display = document.getElementById('discograph-display');

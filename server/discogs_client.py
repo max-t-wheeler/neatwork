@@ -57,9 +57,12 @@ class DiscogsClient:
             time.sleep(60)
             return self.get_resource(resource_id, resource_type)
 
-    def get_releases(self, resource):
+    def get_releases(self, resource_id, resource_type, page=1):
 
-        resp = requests.get(resource, headers=self.session.headers)
+        resp = requests.get(
+            self._url(f'{resource_type}s/{str(resource_id)}/releases?per_page=500&page={str(page)}'),
+            headers=self.session.headers
+        )
 
         if resp.status_code == 200:
             return resp.json()
@@ -71,7 +74,7 @@ class DiscogsClient:
         if resp.status_code == 429:
             print('Waiting...')
             time.sleep(60)
-            return self.get_releases(resource)
+            return self.get_releases(resource_id, resource_type, page)
 
     def search(self, query, **kwargs):
         query_type = kwargs['type']

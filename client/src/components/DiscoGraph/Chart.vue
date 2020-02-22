@@ -9,23 +9,26 @@ import * as d3 from 'd3';
 
 export default {
   name: 'Chart',
-  props: ['graphData', 'nodeData', 'parameters'],
+  props: ['graph', 'graphLastUpdated'],
   data() {
     return {
+      count: 0,
       forceProperties: {
         center: {
           x: 0.5,
           y: 0.5,
         },
         charge: {
-          strength: -500,
+          strength: -1000,
         },
         link: {
           distance: 150,
         },
       },
-      graph: this.graphData,
-      nodeDetails: this.nodeData,
+      lastUpdated: this.graphLastUpdated,
+      nodeProperties: {
+        minSize: 3,
+      },
       selections: {},
       simulation: null,
       height: 3 * window.innerHeight / 4,
@@ -33,6 +36,7 @@ export default {
     };
   },
   mounted() {
+    console.log(this.graph);
     // initialize interactions
     const zoom = d3.zoom().on('zoom', this.zoom);
 
@@ -43,17 +47,14 @@ export default {
     this.selections.nodes = this.selections.graph.append('g').attr('id', 'node-group');
 
     // initialize simulation
-    this.simulation = d3.forceSimulation()
-      .force('charge', d3.forceManyBody())
-      .force('link', d3.forceLink())
-      .force('center', d3.forceCenter())
-      .on('tick', this.tick);
-
-    // pass component data to update DOM
-    this.updateForces();
-    this.updateData();
+    this.initializeSimulation();
   },
   methods: {
+    clearGraph() {
+      // clean up old nodes
+      d3.selectAll('.link').remove();
+      d3.selectAll('.node').remove();
+    },
     drag(d) {
       d.fx = d3.event.x;
       d.fy = d3.event.y;
@@ -66,6 +67,15 @@ export default {
     dragEnd(d) {
       if (!d3.event.active) this.simulation.alphaTarget(0);
     },
+    initializeSimulation() {
+      this.simulation = d3.forceSimulation()
+        .force('charge', d3.forceManyBody())
+        .force('link', d3.forceLink())
+        .force('center', d3.forceCenter())
+        .on('tick', this.tick);
+
+      this.updateForces();
+    },
     tick() {
       let linkTransform;
       if (this.graph.multigraph) {
@@ -74,16 +84,40 @@ export default {
         linkTransform = d => 'M' + d.source.x + ',' + d.source.y + ' L' + d.target.x + ',' + d.target.y;
       }
       const nodeTransform = d => 'translate(' + d.x + ',' + d.y + ')';
+      const nodeTextColor = (d) => {
+        if (d.degree > 0) {
+          const windowArea = this.height * this.width;
+          const svgArea = (2 * this.nodeProperties.minSize * d.degree) ** 2;
+          const ratio = windowArea / svgArea;
+          if (ratio > 10) {
+            return 'white';
+          }
+        }
+        return 'black';
+      };
 
       this.selections.links.selectAll('.link').attr('d', linkTransform);
       this.selections.nodes.selectAll('.node').attr('transform', nodeTransform);
+      this.selections.nodes.selectAll('text').attr('color', nodeTextColor);
     },
-    updateData() {
+    updateForces() {
+      this.simulation.force('center')
+        .x(this.width * this.forceProperties.center.x)
+        .y(this.height * this.forceProperties.center.y);
+      this.simulation.force('charge')
+        .strength(this.forceProperties.charge.strength);
+      this.simulation.force('link')
+        .id(d => d.id)
+        .distance(this.forceProperties.link.distance);
+
+      this.simulation.restart();
+    },
+    updateGraph() {
       // add nodes and links to graph
       this.simulation
-        .nodes(this.graph.nodes)
+        .nodes(this.graph.getNodes())
         .force('link')
-          .links(this.graph.links);
+          .links(this.graph.getLinks());
 
       // add links to DOM
       this.selections.links.selectAll('#link-group')
@@ -110,46 +144,27 @@ export default {
       // add node indicators
       this.selections.nodes.selectAll('.node')
         .append('circle')
-          .attr('id', d => d.type + '_' + d.id)
+          .attr('id', d => d.getId())
           .attr('r', (d) => {
-            if (this.parameters.connection === 'collaboration' || (this.parameters.sourceType !== this.parameters.targetType)) {
-              return 3;
+            if (this.graph.connection === 'collaboration'
+              || this.graph.multigraph
+                || d.degree === 0
+                  || !d.degree) {
+              return this.nodeProperties.minSize;
             }
             if (d.degree > 49) {
-              return 147;
+              return this.forceProperties.link.distance - this.nodeProperties.minSize;
             }
-            if (d.degree === 0 || !d.degree) {
-              return 3;
-            }
-            return 3 * d.degree;
+            return this.nodeProperties.minSize * d.degree;
           })
-          .attr('class', d => d.type)
-        .on('click', (d) => {
-          this.selections.svg.selectAll('.popover').remove();
-          this.showPopover(d);
-        })
-        .on('blur', () => {
-          this.selections.svg.selectAll('.popover').remove();
-        });
+          .attr('class', d => d.data.type);
 
       // add node labels
       this.selections.nodes.selectAll('.node')
         .append('text')
-            .text(d => d.name)
+            .text(d => d.data.name)
             .attr('x', 6)
             .attr('y', 3);
-
-      this.simulation.restart();
-    },
-    updateForces() {
-      this.simulation.force('center')
-        .x(this.width * this.forceProperties.center.x)
-        .y(this.height * this.forceProperties.center.y);
-      this.simulation.force('charge')
-        .strength(this.forceProperties.charge.strength);
-      this.simulation.force('link')
-        .id(d => d.id)
-        .distance(this.forceProperties.link.distance);
 
       this.simulation.restart();
     },
@@ -157,13 +172,16 @@ export default {
       this.selections.graph.attr('transform', d3.event.transform);
     },
   },
-  updated() {
-    this.updateData();
-  },
   watch: {
-    data: {
-      handler(newData) {
-        this.updateData();
+    graph: {
+      handler() {
+        this.initializeSimulation();
+      },
+    },
+    graphLastUpdated: {
+      handler() {
+        this.clearGraph();
+        this.updateGraph();
       },
     },
   },

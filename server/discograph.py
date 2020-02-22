@@ -91,7 +91,7 @@ class DiscoGraph:
 
     def crawl_dislike_associations(self, root):
 
-        releases = self.client.get_releases(f'{root["releases_url"]}?per_page=500')
+        releases = self.client.get_releases(self.source_id, self.source_type)
         num_pages = releases['pagination']['pages']
 
         filtered_releases = []
@@ -101,9 +101,9 @@ class DiscoGraph:
         count = 1
 
         while count < num_pages:
-            releases = self.client.get_releases(releases['pagination']['urls']['next'])
-            filtered_releases.extend(self.filter_releases(releases))
             count += 1
+            releases = self.client.get_releases(self.source_id, self.source_type, count)
+            filtered_releases.extend(self.filter_releases(releases))
 
         self.crawl_releases(root, filtered_releases)
 
